@@ -2,6 +2,8 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.1'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
+	id 'org.sonarqube' version '5.1.0.4882'
 }
 
 group = 'com.example'
@@ -58,16 +60,49 @@ dependencies {
 
 }
 
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 	if (project.hasProperty('skipIntegrationTests') && project.property('skipIntegrationTests').toBoolean()) {
-        	println "Skipping integration tests because 'skipIntegrationTests' property is true."
-        	exclude 'com/digi/auth/TestConnectionLdap.class'
+        println "Skipping integration tests because 'skipIntegrationTests' property is true."
+        exclude 'com/digi/auth/TestConnectionLdap.class'
 		exclude 'com/digi/auth/Project1ApplicationTests.class'
 	}
+    finalizedBy jacocoTestReport
 }
 
-// Ensure source directories are set correctly for both main and test
+jacocoTestReport {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "auth-lib-project"
+        property "sonar.projectName", "Auth Lib Application"
+        property "sonar.projectVersion", version
+
+        property "sonar.java.source", "17"
+
+        property "sonar.sources", "src/main/java"
+        property "sonar.tests", "src/test/java"
+
+        property "sonar.java.binaries", "${layout.buildDirectory}/classes/java/main"
+
+        property "sonar.junit.reportPaths", "${layout.buildDirectory}/test-results/test"
+
+        property "sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory}/reports/jacoco/test/jacocoTestReport.xml"
+
+        property "sonar.sourceEncoding", "UTF-8"
+    }
+}
+
 sourceSets {
 	main {
 		java {
