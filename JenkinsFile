@@ -37,9 +37,14 @@ pipeline {
                     sh './gradlew sonar'
                 }
             }
-        }            
+        }
+        stage('Package') {
+            steps {
+                sh './gradlew assemble'
+            }
+        }
     }
-
+    
     post {
         always {
             echo "Pipeline finished with status: ${currentBuild.result}"
