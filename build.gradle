@@ -63,6 +63,7 @@ tasks.named('test') {
 	if (project.hasProperty('skipIntegrationTests') && project.property('skipIntegrationTests').toBoolean()) {
         	println "Skipping integration tests because 'skipIntegrationTests' property is true."
         	exclude 'com/digi/auth/TestConnectionLdap.class'
+	}
 }
 
 // Ensure source directories are set correctly for both main and test
