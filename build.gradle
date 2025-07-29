@@ -93,7 +93,7 @@ sonarqube {
         property "sonar.sources", "src/main/java"
         property "sonar.tests", "src/test/java"
 
-        property "sonar.java.binaries", "${layout.buildDirectory}/classes/java/main"
+	property "sonar.java.binaries", "${layout.buildDirectory.asFile.absolutePath}/classes/java/main"
 
         property "sonar.junit.reportPaths", "${layout.buildDirectory}/test-results/test"
 
