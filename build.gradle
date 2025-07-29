@@ -1,0 +1,77 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = 'Build-1.0.0'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'com.unboundid:unboundid-ldapsdk:6.0.7'
+	implementation 'org.springframework.boot:spring-boot-starter-data-ldap'
+	implementation 'org.springframework.security:spring-security-ldap'
+	implementation ("org.springframework.ldap:spring-ldap-core")
+	implementation 'org.springframework.boot:spring-boot-starter-data-ldap'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.projectlombok:lombok:1.18.26'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.thymeleaf:thymeleaf-spring6'
+	implementation 'org.apache.tomcat.embed:tomcat-embed-jasper:11.0.2'
+	implementation 'org.springframework.boot:spring-boot-starter-tomcat:3.4.1'
+//	implementation 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:3.0.2'
+	implementation 'org.glassfish.web:jakarta.servlet.jsp.jstl:2.0.0'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	runtimeOnly "org.apache.directory.server:apacheds-core:1.5.5"
+	runtimeOnly "org.apache.directory.server:apacheds-server-jndi:1.5.5"
+	runtimeOnly "com.unboundid:unboundid-ldapsdk:6.0.11"
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'com.unboundid:unboundid-ldapsdk'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'com.h2database:h2'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// Ensure source directories are set correctly for both main and test
+sourceSets {
+	main {
+		java {
+			srcDirs = ['src/main/java']
+		}
+	}
+	test {
+		java {
+			srcDirs = ['src/test/java']
+		}
+	}
+}

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Registration and Login System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+        crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" th:href="@{/login}">Authentication System</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link logout-link" aria-current="page" th:href="@{/logout}">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container mt-4">
+  <div class="row col-md-12">
+    <h2 class="text-center stylish-heading">Dashboard</h2>
+  </div>
+
+  <div th:if="${#strings.equalsIgnoreCase(user.role.roleName, 'ADMIN')}">
+    <table class="table table-bordered table-hover">
+      <thead class="table-dark">
+      <tr class="text-center">
+        <th>Name</th>
+        <th>Email</th>
+        <th>Password</th>
+        <th>Created Time</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="user : ${users}">
+        <td th:text="${user.username}"></td>
+        <td th:text="${user.email}"></td>
+        <td th:text="${user.password != null ? '********' : '*********'}"></td>
+        <td th:text="${#dates.format(user.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+        <td th:text="${user.role.roleName}"></td>
+        <td>
+          <span th:if="${user.status == 'online'}" class="badge bg-success">online</span>
+          <span th:if="${user.status == 'offline'}" class="badge bg-danger">offline</span>
+        </td>
+        <td>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+              <li>
+                <a class="dropdown-item" th:href="@{/users/edit/{id}(id=${user.id})}">Edit</a>
+              </li>
+              <li>
+                <a class="dropdown-item text-danger" th:href="@{/users/delete/{id}(id=${user.id})}">Delete</a>
+              </li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div th:if="${not #strings.equalsIgnoreCase(user.role.roleName, 'ADMIN')}">
+    <div class="alert alert-info text-center" role="alert">
+      WELCOME BACK
+    </div>
+    <div class="card user-card">
+      <div class="card-header text-center">
+        <h5 class="card-title mb-0">Your Profile</h5>
+      </div>
+      <div class="card-body">
+        <p><strong>Name:</strong> <span th:text="${user.username}"></span></p>
+        <p><strong>Email:</strong> <span th:text="${user.email}"></span></p>
+        <p><strong>Role:</strong> <span th:text="${user.role.roleName}"></span></p>
+        <p><strong>Status:</strong>
+          <span th:if="${user.status == 'online'}" class="badge bg-success">online</span>
+          <span th:if="${user.status == 'offline'}" class="badge bg-danger">offline</span>
+        </p>
+        <p><strong>Account Created:</strong> <span th:text="${#dates.format(user.createTime, 'yyyy-MM-dd HH:mm:ss')}"></span></p>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
