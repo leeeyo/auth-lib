@@ -140,3 +140,30 @@ distributions {
 			tasks.named('distTar') {
 				dependsOn tasks.named('bootJar')
 			}
+
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        distZip(MavenPublication) {
+            groupId = 'com.example' // Change as needed
+            artifactId = 'auth-lib-distribution' // Change as needed
+            version = project.version
+
+            artifact("$buildDir/distributions/${project.name}-${project.version}.zip") {
+                extension 'zip'
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "nexus"
+            url = "http://localhost:8081/nexus/repository/maven-releases/"
+            allowInsecureProtocol = true // Only for HTTP, not recommended for production
+            credentials {
+                username = findProperty("nexusUsername")
+                password = findProperty("nexusPassword")
+            }
+        }
+    }
+}

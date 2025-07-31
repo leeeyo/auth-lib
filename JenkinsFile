@@ -49,6 +49,15 @@ pipeline {
                 archiveArtifacts artifacts: 'build/distributions/*.zip', fingerprint: true
             }
         }
+        stage('Publish to Nexus') {
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')
+                ]) {
+                    sh './gradlew publish -PnexusUsername=$NEXUS_USERNAME -PnexusPassword=$NEXUS_PASSWORD'
+                }
+            }
+        }
     }
     
     post {
