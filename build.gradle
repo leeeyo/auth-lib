@@ -158,7 +158,7 @@ publishing {
     repositories {
         maven {
             name = "nexus"
-            url = "http://localhost:8081/nexus/repository/maven-snapshots/"
+            url = "http://localhost:8081/nexus/repository/maven-releases/"
             allowInsecureProtocol = true // Only for HTTP, not recommended for production
             credentials {
                 username = findProperty("nexusUsername")
