@@ -114,3 +114,22 @@ sourceSets {
 		}
 	}
 }
+
+distributions {
+    main {
+        contents {
+            from('build/libs/Project1-Build-1.0.0.jar') {
+                into 'bin'
+            }
+            from('src/main/resources/application.properties') {
+                into 'conf'
+            }
+            from('src/main/resources/scripts/') {
+                into '.'
+                fileMode = 0755
+            }
+            into('log') {
+            }
+        }
+    }
+}
