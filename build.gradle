@@ -146,8 +146,8 @@ apply plugin: 'maven-publish'
 publishing {
     publications {
         distZip(MavenPublication) {
-            groupId = 'com.example' // Change as needed
-            artifactId = 'auth-lib-distribution' // Change as needed
+            groupId = 'dev.digitechnova.com'
+            artifactId = 'auth-lib-distribution'
             version = project.version
 
             artifact("$buildDir/distributions/${project.name}-${project.version}.zip") {
