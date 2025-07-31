@@ -54,7 +54,7 @@ pipeline {
                 withCredentials([
                     usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')
                 ]) {
-                    sh "./gradlew publish -PnexusUsername=$NEXUS_USERNAME -PnexusPassword=$NEXUS_PASSWORD"
+                    sh './gradlew publish -PnexusUsername=$NEXUS_USERNAME -PnexusPassword=$NEXUS_PASSWORD'
                 }
             }
         }
