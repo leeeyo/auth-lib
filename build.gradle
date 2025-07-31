@@ -134,3 +134,9 @@ distributions {
         }
     }
 }
+			tasks.named('distZip') {
+				dependsOn tasks.named('bootJar')
+			}
+			tasks.named('distTar') {
+				dependsOn tasks.named('bootJar')
+			}

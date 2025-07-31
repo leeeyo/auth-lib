@@ -43,6 +43,12 @@ pipeline {
                 sh './gradlew assemble'
             }
         }
+        stage('Packaging') {
+            steps {
+                sh './gradlew distZip'
+                archiveArtifacts artifacts: 'build/distributions/*.zip', fingerprint: true
+            }
+        }
     }
     
     post {
