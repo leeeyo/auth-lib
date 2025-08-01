@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     tools {
-        // Go to Manage Jenkins -> Global Tool Configuration to set them up
         gradle 'gradle'
         jdk 'JDK_17'
     }
