@@ -2,7 +2,7 @@
 if [ -f app.pid ]; then
   kill $(cat app.pid)
   rm app.pid
-  echo "Application stopped."
+  echo "Application terminated."
 else
-  echo "No PID file found. Is the app running?"
+  echo "Application is not UP "
 fi 
