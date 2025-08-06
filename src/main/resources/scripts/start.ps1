@@ -3,7 +3,7 @@
 # ============================================================================
 $jarFile = "bin/Project1-1.0.0.jar"
 $configFile = "conf/application.properties"
-$logFile = "log/app.log"
+$logFile = "logs/app.log"
 $pidFile = "app.pid"
 
 # ============================================================================
@@ -34,8 +34,8 @@ if (-not (Test-Path $configFile)) {
 }
 
 # Create log directory if it doesn't exist
-if (-not (Test-Path "log")) {
-    New-Item -ItemType Directory -Path "log" | Out-Null
+if (-not (Test-Path "logs")) {
+    New-Item -ItemType Directory -Path "logs" | Out-Null
 }
 
 # ============================================================================
@@ -43,7 +43,7 @@ if (-not (Test-Path "log")) {
 # ============================================================================
 Write-Host "--- Starting Application ---" -ForegroundColor Cyan
 # Start Java in a hidden cmd window and get the cmd process object
-$command = "java -jar `"$jarFile`" --spring.config.location=`"$configFile`" > `"$logFile`" 2>&1"
+$command = "java -jar `"$jarFile`" --spring.config.location=`"$configFile`""
 $process = Start-Process cmd.exe -ArgumentList "/c $command" -NoNewWindow -PassThru
 
 # ============================================================================

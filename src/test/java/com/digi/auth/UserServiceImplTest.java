@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -21,6 +22,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Sql(statements = {"DELETE FROM users", "DELETE FROM roles"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "classpath:/sql/data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @SpringBootTest
 @ActiveProfiles("test")
 class UserServiceImplTest {
@@ -34,6 +37,8 @@ class UserServiceImplTest {
     private RoleRepository roleRepository;
     @Autowired
     private AuthConfig authConfig;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
@@ -54,26 +59,7 @@ class UserServiceImplTest {
                 .build();
     }
 
-    // @Test
-    // @Sql(value = { "classpath:/sql/data.sql", "classpath:/sql/schema.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-    // void saveUserTest() {
-    //     Role userRole = roleRepository.findByRoleName(RoleEnum.USER)
-    //             .orElseThrow(() -> new RuntimeException("role not found in database"));
-    //     User userToSave = createTestUser("testUser", "test@example.com" , "password123");
-    //     userToSave.setRole(userRole);
-    //     User savedUser = userRepository.save(userToSave);
-
-    //     assertEquals("testUser", savedUser.getUsername());
-    //     assertEquals("test@example.com", savedUser.getEmail());
-    //     assertEquals("password123", savedUser.getPassword());
-    //     String rolex = savedUser.getRole().toString();
-    //     System.out.println("Role: " + rolex);
-    //     assertEquals("Role(role_id=5, roleName=USER)", rolex);
-    //     assertNotNull(savedUser.getCreateTime());
-    // }
-
     @Test
-    @Sql(value = { "classpath:/sql/schema.sql", "classpath:/sql/data.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void testFetchAllUsers() {
         String authType = authConfig.getType();
         if ("db".equals(authType)) {
@@ -101,7 +87,6 @@ class UserServiceImplTest {
         }
     }
     @Test
-    @Sql(value = { "classpath:/sql/schema.sql", "classpath:/sql/data.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void testFindUserEmailAndPassword() {
         String authType = authConfig.getType();
 
@@ -111,7 +96,7 @@ class UserServiceImplTest {
                 .orElseThrow(() -> new RuntimeException("role not found in database"));
         User userToSave = createTestUser("X", "test@example.com" , "password123");
         userToSave.setRole(userRole);
-        userRepository.save(userToSave);
+        userService.saveUser(userToSave);
         System.out.println("Attempting to find user with email and password...");
         Optional<User> userByEmailAndPasswordOpt =
                 Optional.ofNullable(userService.findByEmailAndPassword("test@example.com", "password123"));
@@ -124,7 +109,6 @@ class UserServiceImplTest {
         System.out.println("User unique");
 
         User userByEmailAndPassword = userByEmailAndPasswordOpt.get();
-        assertEquals("password123", userByEmailAndPassword.getPassword());
         assertEquals("test@example.com", userByEmailAndPassword.getEmail());
 
         }else if ("ldap".equals(authType)) {
@@ -141,7 +125,6 @@ class UserServiceImplTest {
 
 
     @Test
-    @Sql(value = { "classpath:/sql/schema.sql", "classpath:/sql/data.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void testUpdateUser() {
         Role userRole = roleRepository.findByRoleName(RoleEnum.USER)
                 .orElseThrow(() -> new RuntimeException("role not found in database"));
@@ -161,7 +144,6 @@ class UserServiceImplTest {
     }
 
     @Test
-    @Sql(value = { "classpath:/sql/schema.sql", "classpath:/sql/data.sql" }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void testDeleteUserById() {
         Role userRole = roleRepository.findByRoleName(RoleEnum.USER)
                 .orElseThrow(() -> new RuntimeException("role not found in database"));

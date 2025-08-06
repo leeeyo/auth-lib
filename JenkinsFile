@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout Source') {
             steps {
-                git url: 'https://github.com/leeeyo/auth-lib.git',
+                git url: 'ssh://debian@localhost:5002/srv/git/auth-lib.git',
                     branch: 'main'
             }
         }

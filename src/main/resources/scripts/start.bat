@@ -40,8 +40,7 @@ if not exist "logs" mkdir "logs"
 :: --- Start Application ---
 :: ============================================================================
 echo Starting the application...
-start "JavaApp" /B java %JAVA_OPTS% -jar "%JAR_NAME%" %APP_ARGS% > "%LOG_FILE%" 2>&1
-
+start "JavaApp" /B java %JAVA_OPTS% -jar "%JAR_NAME%" %APP_ARGS%
 :: ============================================================================
 :: --- Find and Save PID ---
 :: ============================================================================

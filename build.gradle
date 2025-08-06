@@ -28,22 +28,24 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-//	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'com.unboundid:unboundid-ldapsdk:6.0.7'
 	implementation 'org.springframework.boot:spring-boot-starter-data-ldap'
 	implementation 'org.springframework.security:spring-security-ldap'
 	implementation ("org.springframework.ldap:spring-ldap-core")
-	implementation 'org.springframework.boot:spring-boot-starter-data-ldap'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.projectlombok:lombok:1.18.26'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.thymeleaf:thymeleaf-spring6'
 	implementation 'org.apache.tomcat.embed:tomcat-embed-jasper:11.0.2'
 	implementation 'org.springframework.boot:spring-boot-starter-tomcat:3.4.1'
-//	implementation 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:3.0.2'
 	implementation 'org.glassfish.web:jakarta.servlet.jsp.jstl:2.0.0'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
+	
+	// Jakarta EE
+	implementation 'jakarta.platform:jakarta.jakartaee-api:10.0.0'
+	
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'com.mysql:mysql-connector-j'
@@ -70,7 +72,7 @@ tasks.named('test') {
 	useJUnitPlatform()
 	if (project.hasProperty('skipIntegrationTests') && project.property('skipIntegrationTests').toBoolean()) {
 		println "Skipping integration tests because 'skipIntegrationTests' property is true."
-		exclude 'com/digi/auth/TestConnectionLdap.class'
+		exclude 'com/digi/auth/UserServiceLdapIntegrationTest.class'
 		exclude 'com/digi/auth/Project1ApplicationTests.class'
 	}
     finalizedBy jacocoTestReport
@@ -129,7 +131,7 @@ distributions {
                 into '.'
                 fileMode = 0755
             }
-            into('log') {
+            into('logs') {
             }
         }
     }

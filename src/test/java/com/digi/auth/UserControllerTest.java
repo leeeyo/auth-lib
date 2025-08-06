@@ -51,7 +51,7 @@ class UserControllerTest {
     }
     @BeforeAll
     public void setUpBaseUrl() {
-        baseUrl = baseUrl.concat(":").concat(port + "").concat("/users");
+        baseUrl = baseUrl.concat(":" + port).concat("/api/v1/users");
     }
 
     @BeforeEach
@@ -83,7 +83,7 @@ class UserControllerTest {
                     .status("offline")
                     .build();
 
-            ResponseEntity<User> response = restTemplate.postForEntity(baseUrl + "/add", user, User.class);
+            ResponseEntity<User> response = restTemplate.postForEntity(baseUrl, user, User.class);
 
             assertNotNull(response, "Response should not be null");
             assertEquals(HttpStatus.CREATED, response.getStatusCode(), "Http status 200 Created");
@@ -102,7 +102,7 @@ class UserControllerTest {
         if ("db".equals(authType)) {
 
             ResponseEntity<List<User>> response = restTemplate.exchange(
-                    baseUrl + "/Get",
+                    baseUrl,
                     HttpMethod.GET,
                     null,
                     new ParameterizedTypeReference<List<User>>() {
@@ -142,11 +142,10 @@ class UserControllerTest {
                 .build();
 
         ResponseEntity<User> response = restTemplate.exchange(
-                baseUrl + "/put/{id}",
+                baseUrl + "/" + localId,
                 HttpMethod.PUT,
                 new HttpEntity<>(user),
-                User.class,
-                localId
+                User.class
         );
 
         System.out.println("Updating user with ID: " + response.getBody().getId());
@@ -187,11 +186,10 @@ class UserControllerTest {
         System.out.println("user's id: " + user.getId());
 
         ResponseEntity<Void> response = restTemplate.exchange(
-                baseUrl + "/Delete/{id}",
+                baseUrl + "/" + localId,
                 HttpMethod.DELETE,
                 null,
-                Void.class,
-                localId
+                Void.class
         );
 
         System.out.println("Users Count after deletion: " + Repo.findAll().size());

@@ -1,179 +1,134 @@
 package com.digi.auth.service;
 
 import com.digi.auth.config.AuthConfig;
+import com.digi.auth.exception.UserNotFoundException;
 import com.digi.auth.model.Role;
 import com.digi.auth.model.RoleEnum;
 import com.digi.auth.model.User;
 import com.digi.auth.repository.RoleRepository;
 import com.digi.auth.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.ldap.core.AttributesMapper;
-import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.ldap.filter.EqualsFilter;
-import org.springframework.stereotype.Service;
-
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.ModificationItem;
 import javax.naming.directory.SearchControls;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ldap.core.AttributesMapper;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.filter.EqualsFilter;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class UserServiceImpl implements UserService {
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final AuthConfig authConfig;
+    private final LdapTemplate ldapTemplate;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private RoleRepository roleRepository;
-    @Autowired
-    private AuthConfig authConfig;
-    @Autowired
-    private LdapTemplate ldapTemplate;
+    public UserServiceImpl(UserRepository userRepository,
+                         RoleRepository roleRepository,
+                         AuthConfig authConfig,
+                         LdapTemplate ldapTemplate,
+                         PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.authConfig = authConfig;
+        this.ldapTemplate = ldapTemplate;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public User saveUser(User user) {
+        logger.debug("Attempting to save user: {}", user.getUsername());
         String authType = authConfig.getType();
 
         if ("db".equals(authType)) {
-            return userRepository.save(user);
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            User savedUser = userRepository.save(user);
+            logger.info("Successfully saved user with ID: {}", savedUser.getId());
+            return savedUser;
         } else if ("ldap".equals(authType)) {
             saveUserStatusToLdap(user);
+            logger.info("Successfully updated LDAP user: {}", user.getUsername());
             return user;
         } else {
+            logger.error("Unsupported authentication type: {}", authType);
             throw new UnsupportedOperationException("Unsupported authentication type: " + authType);
         }
     }
 
     private void saveUserStatusToLdap(User user) {
+        logger.debug("Updating LDAP user status for: {}", user.getUsername());
         String userDn = "uid=" + user.getUsername() + ",ou=users";
         ModificationItem[] mods = new ModificationItem[1];
         mods[0] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE,
                 new BasicAttribute("description", user.getStatus()));
+        try {
             ldapTemplate.modifyAttributes(userDn, mods);
-
+            logger.debug("Successfully updated LDAP attributes for user: {}", user.getUsername());
+        } catch (Exception e) {
+            logger.error("Failed to update LDAP attributes for user: {}", user.getUsername(), e);
+            throw new RuntimeException("Failed to update LDAP user: " + user.getUsername(), e);
+        }
     }
-
 
     @Override
     public List<User> fetchAllUsers() {
-        String authType = authConfig.getType();  // Get the authentication type
+        logger.debug("Fetching all users");
+        String authType = authConfig.getType();
 
-        if ("db".equals(authType)) {
-            return userRepository.findAll();
-        } else if ("ldap".equals(authType)) {
-            return fetchAllUsersFromLdap();
-        } else {
-            throw new UnsupportedOperationException("Unsupported authentication type: " + authType);
+        try {
+            if ("db".equals(authType)) {
+                List<User> users = userRepository.findAll();
+                logger.debug("Retrieved {} users from database", users.size());
+                return users;
+            } else if ("ldap".equals(authType)) {
+                List<User> users = fetchAllUsersFromLdap();
+                logger.debug("Retrieved {} users from LDAP", users.size());
+                return users;
+            } else {
+                logger.error("Unsupported authentication type: {}", authType);
+                throw new UnsupportedOperationException("Unsupported authentication type: " + authType);
+            }
+        } catch (Exception e) {
+            logger.error("Error fetching users", e);
+            throw new RuntimeException("Failed to fetch users", e);
         }
     }
 
     private List<User> fetchAllUsersFromLdap() {
+        logger.debug("Fetching all users from LDAP");
         EqualsFilter filter = new EqualsFilter("objectClass", "inetOrgPerson");
 
         SearchControls searchControls = new SearchControls();
         searchControls.setReturningAttributes(new String[]{"mail", "uid", "title", "createTimestamp", "description"});
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 
-        List<User> users = ldapTemplate.search(
+        return ldapTemplate.search(
                 "ou=users",
                 filter.encode(),
                 searchControls,
                 (AttributesMapper<User>) attrs -> {
                     User user = new User();
-
-                    user.setEmail(attrs.get("mail").get().toString());
-                    user.setUsername(attrs.get("uid").get().toString());
-                    user.setStatus(attrs.get("description").get().toString());
-
-                    String createTimestamp = attrs.get("createTimestamp") != null ?
-                            attrs.get("createTimestamp").get().toString() : null;
-                    if (createTimestamp != null) {
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssX");
-                        Instant createTime = Instant.from(formatter.parse(createTimestamp));
-                        user.setCreateTime(createTime);
-                    } else {
-                        user.setCreateTime(Instant.now());
-                    }
-
-                    String title = "GUEST";
-                    if (attrs.get("title") != null) {
-                        title = attrs.get("title").get().toString();
-                    }
-
                     try {
-                        RoleEnum roleEnum = RoleEnum.valueOf(title.toUpperCase());
-                        Role role = new Role();
-                        role.setRoleName(roleEnum);
-                        user.setRole(role);
-                    } catch (IllegalArgumentException e) {
-                        Role guestRole = new Role();
-                        guestRole.setRoleName(RoleEnum.GUEST);
-                        user.setRole(guestRole);
-                    }
-
-                    return user;
-                }
-        );
-
-        return new ArrayList<>(users);
-    }
-
-    @Override
-    public User findByEmailAndPassword(String email, String password) {
-        String authType = authConfig.getType();
-
-        if ("db".equals(authType)) {
-            // Database
-            System.out.println("Authenticating user in database with email: " + email);
-            return userRepository.findByEmailAndPassword(email, password).orElse(null);
-        } else if ("ldap".equals(authType)) {
-            // LDAP
-            System.out.println("Authenticating user via LDAP with email: " + email);
-            return authenticateViaLdap(email, password).orElse(null);
-        } else {
-            throw new UnsupportedOperationException("Unsupported authentication type: " + authType);
-        }
-    }
-
-
-    private Optional<User> authenticateViaLdap(String email, String password) {
-        EqualsFilter filter = new EqualsFilter("mail", email);
-
-        boolean authenticated = ldapTemplate.authenticate("ou=users", filter.encode(), password);
-
-        if (authenticated) {
-            List<User> users = ldapTemplate.search(
-                    "ou=users",
-                    filter.encode(),
-                    (AttributesMapper<User>) attrs -> {
-                        User user = new User();
                         user.setEmail(attrs.get("mail").get().toString());
                         user.setUsername(attrs.get("uid").get().toString());
+                        user.setStatus(attrs.get("description") != null ? 
+                            attrs.get("description").get().toString() : "ACTIVE");
 
-                        if (attrs.get("title") != null) {
-                            String title = attrs.get("title").get().toString();
-                            try {
-                                RoleEnum roleEnum = RoleEnum.valueOf(title.toUpperCase());
-                                Role role = new Role();
-                                role.setRoleName(roleEnum);
-                                user.setRole(role);
-                            } catch (IllegalArgumentException e) {
-                                Role guestRole = new Role();
-                                guestRole.setRoleName(RoleEnum.GUEST);
-                                user.setRole(guestRole); // Default role
-                            }
-                        } else {
-                            Role guestRole = new Role();
-                            guestRole.setRoleName(RoleEnum.GUEST);
-                            user.setRole(guestRole);
-                        }
-
-                        // Extracting creation timestamp
                         if (attrs.get("createTimestamp") != null) {
                             String createTimestamp = attrs.get("createTimestamp").get().toString();
                             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssX");
@@ -182,81 +137,65 @@ public class UserServiceImpl implements UserService {
                         } else {
                             user.setCreateTime(Instant.now());
                         }
-
                         return user;
+                    } catch (Exception e) {
+                        logger.error("Error mapping LDAP attributes for user: {}", user.getUsername(), e);
+                        throw new RuntimeException("Failed to map LDAP attributes", e);
                     }
-            );
-
-            if (!users.isEmpty()) {
-                return Optional.of(users.get(0));
-            }
-        }
-        return Optional.empty();
+                }
+        );
     }
 
+    @Override
+    public User findByEmailAndPassword(String email, String password) {
+        logger.debug("Attempting to find user by email: {}", email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        if (passwordEncoder.matches(password, user.getPassword())) {
+            return user;
+        } else {
+            throw new UserNotFoundException("User not found with email: " + email);
+        }
+    }
 
     @Override
     public User updateUser(User user, Long userId) {
+        logger.debug("Attempting to update user with ID: {}", userId);
         User existingUser = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> new UserNotFoundException(userId));
 
-        if (Objects.nonNull(user.getUsername()) && !user.getUsername().isBlank()) {
-            existingUser.setUsername(user.getUsername());
-        }
-        if (Objects.nonNull(user.getEmail()) && !user.getEmail().isBlank()) {
+        if (user.getEmail() != null) {
             existingUser.setEmail(user.getEmail());
         }
-        if (Objects.nonNull(user.getPassword()) && !user.getPassword().isBlank()) {
-            existingUser.setPassword(user.getPassword());
+        if (user.getPassword() != null) {
+            existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
         }
-        if (Objects.nonNull(user.getRole())) {existingUser.setRole(user.getRole());}
-
-        if (Objects.nonNull(user.getStatus())) {existingUser.setStatus(user.getStatus());}
-
-
-        return userRepository.save(existingUser);
+        if (user.getUsername() != null) {
+            existingUser.setUsername(user.getUsername());
         }
+        if (user.getStatus() != null) {
+            existingUser.setStatus(user.getStatus());
+        }
+
+        User updatedUser = userRepository.save(existingUser);
+        logger.info("Successfully updated user with ID: {}", userId);
+        return updatedUser;
+    }
 
     @Override
     public void deleteUserById(Long userId) {
-        // Check if the user exists before deleting
+        logger.debug("Attempting to delete user with ID: {}", userId);
         if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found with ID: " + userId);
+            logger.error("User not found with ID: {}", userId);
+            throw new UserNotFoundException(userId);
         }
         userRepository.deleteById(userId);
+        logger.info("Successfully deleted user with ID: {}", userId);
     }
+
     @Override
     public Optional<Role> findByRoleName(RoleEnum roleName) {
-        String authType = authConfig.getType();
-
-        if ("db".equals(authType)) {
-            return roleRepository.findByRoleName(roleName);
-        } else if ("ldap".equals(authType)) {
-            return fetchRoleFromLdap(roleName);
-        } else {
-            throw new UnsupportedOperationException("Unsupported authentication type: " + authType);
-        }
+        logger.debug("Searching for role: {}", roleName);
+        return roleRepository.findByRoleName(roleName);
     }
-
-    private Optional<Role> fetchRoleFromLdap(RoleEnum roleName) {
-        EqualsFilter filter = new EqualsFilter("title", roleName.name());
-
-        List<Role> roles = ldapTemplate.search(
-                "ou=users",
-                filter.encode(),
-                (AttributesMapper<Role>) attrs -> {
-                    Role role = new Role();
-                    role.setRoleName(RoleEnum.valueOf(attrs.get("title").get().toString()));
-                    return role;
-                }
-        );
-
-        if (!roles.isEmpty()) {
-            return Optional.of(roles.get(0));
-        } else {
-            return Optional.empty();
-        }
-    }
-
-
 }

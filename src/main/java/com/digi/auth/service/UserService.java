@@ -12,7 +12,6 @@ public interface UserService {
     User saveUser(User user);
     List<User> fetchAllUsers();
     User findByEmailAndPassword(String email, String password);
-//    Optional<Role> findByRoleName(RoleEnum roleName);
     User updateUser(User user, Long userId);
     void deleteUserById(Long userId);
     Optional<Role> findByRoleName(RoleEnum roleName);
